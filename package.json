@@ -1,0 +1,8 @@
+{
+  "name": "too-busy",
+  "version": "1.0.0",
+  "description": "AI replies for people who can't be bothered",
+  "scripts": {
+    "dev": "vercel dev"
+  }
+}

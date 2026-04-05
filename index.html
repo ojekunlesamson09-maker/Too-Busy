@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Too Busy. — AI replies for people who can't be bothered</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Mono:ital@0;1&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0e0e0e;
+      --surface: #161616;
+      --border: #2a2a2a;
+      --accent: #d4f560;
+      --accent-dim: #a8c240;
+      --text: #f0f0f0;
+      --muted: #888;
+      --card: #1a1a1a;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Syne', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 2rem 1rem 4rem;
+    }
+
+    .noise {
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .wrap {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      max-width: 560px;
+    }
+
+    header {
+      margin-bottom: 3rem;
+      padding-top: 2rem;
+    }
+
+    .logo {
+      font-size: 3rem;
+      font-weight: 800;
+      letter-spacing: -2px;
+      line-height: 1;
+    }
+
+    .logo span {
+      color: var(--accent);
+    }
+
+    .tagline {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.8rem;
+      color: var(--muted);
+      margin-top: 0.5rem;
+      letter-spacing: 0.05em;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 1.5rem;
+      margin-bottom: 1rem;
+    }
+
+    label {
+      display: block;
+      font-family: 'DM Mono', monospace;
+      font-size: 0.72rem;
+      color: var(--muted);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 0.6rem;
+    }
+
+    textarea {
+      width: 100%;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--text);
+      font-family: 'Syne', sans-serif;
+      font-size: 0.95rem;
+      line-height: 1.6;
+      padding: 0.9rem 1rem;
+      resize: none;
+      min-height: 110px;
+      transition: border-color 0.2s;
+      outline: none;
+    }
+
+    textarea:focus { border-color: var(--accent); }
+    textarea::placeholder { color: #444; }
+
+    .vibes {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 0.4rem;
+    }
+
+    .vibe {
+      padding: 6px 14px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--muted);
+      font-family: 'DM Mono', monospace;
+      font-size: 0.75rem;
+      cursor: pointer;
+      transition: all 0.15s;
+      letter-spacing: 0.03em;
+    }
+
+    .vibe:hover { border-color: var(--accent); color: var(--accent); }
+
+    .vibe.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #0e0e0e;
+      font-weight: 700;
+    }
+
+    .btn {
+      width: 100%;
+      padding: 1rem;
+      background: var(--accent);
+      color: #0e0e0e;
+      border: none;
+      border-radius: 10px;
+      font-family: 'Syne', sans-serif;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      letter-spacing: -0.02em;
+      transition: all 0.15s;
+      margin-top: 1rem;
+    }
+
+    .btn:hover { background: var(--accent-dim); transform: translateY(-1px); }
+    .btn:active { transform: translateY(0); }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+    .replies { display: flex; flex-direction: column; gap: 10px; margin-top: 1.5rem; }
+
+    .reply-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.1rem 1.2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 1rem;
+      animation: fadeUp 0.3s ease forwards;
+      opacity: 0;
+    }
+
+    .reply-card:nth-child(1) { animation-delay: 0.05s; }
+    .reply-card:nth-child(2) { animation-delay: 0.15s; }
+    .reply-card:nth-child(3) { animation-delay: 0.25s; }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .reply-text {
+      font-size: 0.95rem;
+      line-height: 1.6;
+      color: var(--text);
+      flex: 1;
+    }
+
+    .copy-btn {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--muted);
+      font-family: 'DM Mono', monospace;
+      font-size: 0.7rem;
+      padding: 5px 10px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.15s;
+      flex-shrink: 0;
+    }
+
+    .copy-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .copy-btn.copied { color: var(--accent); border-color: var(--accent); }
+
+    .loading {
+      text-align: center;
+      padding: 2rem;
+      color: var(--muted);
+      font-family: 'DM Mono', monospace;
+      font-size: 0.8rem;
+      letter-spacing: 0.05em;
+    }
+
+    .dot-anim::after {
+      content: '';
+      animation: dots 1.2s steps(4, end) infinite;
+    }
+
+    @keyframes dots {
+      0%, 100% { content: ''; }
+      25% { content: '.'; }
+      50% { content: '..'; }
+      75% { content: '...'; }
+    }
+
+    .section-label {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.72rem;
+      color: var(--muted);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 0.8rem;
+    }
+
+    footer {
+      margin-top: 3rem;
+      font-family: 'DM Mono', monospace;
+      font-size: 0.7rem;
+      color: #333;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="noise"></div>
+  <div class="wrap">
+    <header>
+      <div class="logo">Too Busy<span>.</span></div>
+      <div class="tagline">// ai replies for people who can't be bothered</div>
+    </header>
+
+    <div class="card">
+      <label>Their message</label>
+      <textarea id="msg" placeholder="Paste what they sent you... e.g. 'Hey, are you free this Saturday?'"></textarea>
+
+      <label style="margin-top:1.2rem;">Your vibe</label>
+      <div class="vibes">
+        <button class="vibe active" data-vibe="Softly Busy">Softly Busy</button>
+        <button class="vibe" data-vibe="Lowkey Unavailable">Lowkey Unavailable</button>
+        <button class="vibe" data-vibe="Chronically Booked">Chronically Booked</button>
+      </div>
+
+      <button class="btn" id="genBtn" onclick="generate()">Generate replies →</button>
+    </div>
+
+    <div id="output"></div>
+
+    <footer>built with zero effort. that's the point.</footer>
+  </div>
+
+  <script>
+    let vibe = 'Softly Busy';
+
+    document.querySelectorAll('.vibe').forEach(b => {
+      b.addEventListener('click', () => {
+        document.querySelectorAll('.vibe').forEach(x => x.classList.remove('active'));
+        b.classList.add('active');
+        vibe = b.dataset.vibe;
+      });
+    });
+
+    async function generate() {
+      const msg = document.getElementById('msg').value.trim();
+      if (!msg) return;
+
+      const btn = document.getElementById('genBtn');
+      const out = document.getElementById('output');
+      btn.disabled = true;
+      out.innerHTML = '<div class="loading"><span class="dot-anim">crafting your non-reply</span></div>';
+
+      try {
+        const res = await fetch('/api/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message: msg, vibe })
+        });
+
+        const data = await res.json();
+        if (!data.replies) throw new Error('No replies');
+
+        out.innerHTML = `
+          <div class="section-label">Pick your reply</div>
+          <div class="replies">
+            ${data.replies.map(r => `
+              <div class="reply-card">
+                <div class="reply-text">${r}</div>
+                <button class="copy-btn" onclick="copy(this, \`${r.replace(/`/g, '\\`')}\`)">copy</button>
+              </div>
+            `).join('')}
+          </div>`;
+      } catch (e) {
+        out.innerHTML = '<div class="loading">something went wrong. try again.</div>';
+      }
+
+      btn.disabled = false;
+    }
+
+    function copy(btn, text) {
+      navigator.clipboard.writeText(text).then(() => {
+        btn.textContent = 'copied!';
+        btn.classList.add('copied');
+        setTimeout(() => { btn.textContent = 'copy'; btn.classList.remove('copied'); }, 2000);
+      });
+    }
+  </script>
+</body>
+</html>
